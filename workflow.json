@@ -1,0 +1,222 @@
+{
+  "name": "Parserdata - Email to Google Sheets (Invoices)",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {},
+        "options": {
+          "downloadAttachments": true
+        }
+      },
+      "id": "b0c961be-6dfc-4b39-b90e-3ea9e5929e1e",
+      "name": "Gmail Trigger",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1,
+      "position": [
+        -128,
+        32
+      ],
+      "webhookId": "",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YOUR_GMAIL_CREDENTIAL_ID",
+          "name": "Gmail account (replace in your n8n)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_SPREADSHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_SPREADSHEET_ID/edit#gid=0"
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "invoice_number",
+              "fieldValue": "={{ $json.invoice_number }}"
+            },
+            {
+              "fieldId": "invoice_date",
+              "fieldValue": "={{ $json.invoice_date }}"
+            },
+            {
+              "fieldId": "payment_due_date",
+              "fieldValue": "={{ $json.due_date }}"
+            },
+            {
+              "fieldId": "seller_name",
+              "fieldValue": "={{ $json.supplier_name }}"
+            },
+            {
+              "fieldId": "buyer_name",
+              "fieldValue": "={{ $json.customer_name }}"
+            },
+            {
+              "fieldId": "item_description",
+              "fieldValue": "={{ $json.item_description }}"
+            },
+            {
+              "fieldId": "quantity",
+              "fieldValue": "={{ $json.quantity }}"
+            },
+            {
+              "fieldId": "unit_price",
+              "fieldValue": "={{ $json.unit_price }}"
+            },
+            {
+              "fieldId": "tax_amount",
+              "fieldValue": "={{ $json.tax_amount }}"
+            },
+            {
+              "fieldId": "total_amount",
+              "fieldValue": "={{ $json.total_amount }}"
+            },
+            {
+              "fieldId": "sku",
+              "fieldValue": "={{ $json.sku }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "25a68aee-5e53-49b9-ab82-5ce5200b247b",
+      "name": "Google Sheets - Append Row",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [
+        672,
+        32
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_GOOGLE_SHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets (replace in your n8n)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.parserdata.com/v1/extract",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "prompt",
+              "value": "Extract the following fields from the invoice.\n\nInvoice-level fields (single values):\n- invoice_number\n- invoice_date\n- payment_due_date\n- seller_name\n- buyer_name\n- net_amount        (subtotal before tax)\n- tax_amount\n- total_amount\n\nLine items (one row per item in the invoice table):\n- sku\n- item_description\n- quantity\n- unit_price\n- line_total\n\nReturn JSON with this structure:\n\n{\n  \"result\": {\n    \"invoice_number\": \"...\",\n    \"invoice_date\": \"YYYY-MM-DD\",\n    \"payment_due_date\": \"YYYY-MM-DD\",\n    \"seller_name\": \"...\",\n    \"buyer_name\": \"...\",\n    \"net_amount\": ...,\n    \"tax_amount\": ...,\n    \"total_amount\": ...,\n    \"line_items\": [\n      {\n        \"sku\": \"...\",\n        \"item_description\": \"...\",\n        \"quantity\": ...,\n        \"unit_price\": ...,\n        \"line_total\": ...\n      }\n    ]\n  }\n}\n\nInvoice-level fields should be repeated logically for each line item when I later expand line_items."
+            },
+            {
+              "name": "options",
+              "value": "{   \"return_schema\": false,   \"return_selected_fields\": false }"
+            },
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "attachment_0"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 300000
+        }
+      },
+      "name": "HTTP Request (Parserdata Extract)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        192,
+        32
+      ],
+      "id": "9dd7ce74-4a48-4dfd-ba94-7f3d08979a58",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "YOUR_PARSERDATA_HTTP_HEADER_AUTH_ID",
+          "name": "Parserdata API (HTTP header auth, replace)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// We receive one item with Parserdata's response\nconst item = $json;\n\n// All extracted fields are under `result`\nconst header = item.result || {};\nconst lines = header.line_items || [];\n\n// Build one n8n item per line item, with header fields repeated\nreturn lines.map(line => {\n  return {\n    json: {\n      // Invoice-level fields\n      invoice_number: header.invoice_number,\n      invoice_date: header.invoice_date,\n      due_date: header.due_date,\n      supplier_name: header.supplier_name,\n      customer_name: header.customer_name,\n      net_amount: header.net_amount,\n      tax_amount: header.tax_amount,\n      total_amount: header.total_amount,\n\n      // Line-level fields\n      sku: line.sku,\n      item_description: line.item_description,\n      quantity: line.quantity,\n      unit_price: line.unit_price,\n      line_total: line.line_total\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        32
+      ],
+      "id": "3baf9a45-a836-41b1-a9cd-2e7d0e61495b",
+      "name": "Code in JavaScript"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request (Parserdata Extract)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request (Parserdata Extract)": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets - Append Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "30c83e08-ce4a-45b6-b9ca-420427753969",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "YOUR_N8N_INSTANCE_ID"
+  },
+  "id": "YOUR_WORKFLOW_ID",
+  "tags": []
+}
