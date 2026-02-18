@@ -1,4 +1,4 @@
-# Parserdata + n8n: Email Invoices to Google Sheets
+# ParserData + n8n: Email Invoices to Google Sheets
 
 ![n8n workflow](https://img.shields.io/badge/n8n-workflow-blue)
 ![Parserdata API](https://img.shields.io/badge/Parserdata-API-brightgreen)
@@ -7,7 +7,7 @@
 This repository contains an n8n workflow that automatically:
 
 1. Watches a Gmail inbox for new emails with invoice PDF, PNG, jPG attachments  
-2. Sends each invoice to the Parserdata API  
+2. Sends each invoice to the ParserData API  
 3. Normalizes the response into one item per invoice line item  
 4. Appends each line item as a new row into a Google Sheet  
 
@@ -229,7 +229,7 @@ If nothing appears, check:
 If you run into issues:
 
 - Open a GitHub issue in this repository, or
-- Reach out via the Parserdata support email: support@parserdata.com.
+- Reach out via the ParserData support email: support@parserdata.com.
 
 Happy automating!
 
