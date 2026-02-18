@@ -11,7 +11,14 @@ This repository contains an n8n workflow that automatically:
 3. Normalizes the response into one item per invoice line item  
 4. Appends each line item as a new row into a Google Sheet  
 
-It’s a complete “Email → Structured data in Sheets” pipeline for invoices.
+It's a complete “Email → Structured data in Sheets” pipeline for invoices.
+
+## Official ParserData pages
+
+- **Official workflow page:** https://parserdata.com/integrations/n8n/email-invoice-extractor
+- **n8n integration hub:** https://parserdata.com/integrations/n8n
+- **API reference:** https://parserdata.com/parserdata-api
+- **Pricing:** https://parserdata.com/pricing
 
 ---
 
